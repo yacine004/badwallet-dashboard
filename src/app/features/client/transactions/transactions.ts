@@ -10,75 +10,73 @@ import { XofPipe } from '../../../shared/pipes/xof.pipe';
   standalone: true,
   imports: [CommonModule, FormsModule, XofPipe],
   template: `
-    <div class="transactions">
-      <h2>Historique des transactions</h2>
-
-      <div class="alert" *ngIf="!balanceStore.phone()">
-        Veuillez d'abord vous connecter depuis le Dashboard.
+    <div class="page">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Historique des transactions</h1>
+          <p class="page-subtitle">Suivez vos dépôts, retraits, transferts et paiements</p>
+        </div>
       </div>
 
-      <div *ngIf="balanceStore.phone()">
-        <div class="filters">
-          <select [(ngModel)]="selectedType" (change)="applyFilter()">
+      <div class="form-grid">
+        <div class="toolbar">
+          <select class="select" [(ngModel)]="selectedType" (change)="applyFilter()">
             <option value="">Tous les types</option>
             <option value="DEPOSIT">Dépôt</option>
             <option value="WITHDRAW">Retrait</option>
             <option value="TRANSFER">Transfert</option>
             <option value="PAYMENT">Paiement</option>
           </select>
-          <button (click)="loadTransactions()">🔄 Actualiser</button>
+          <button class="btn btn-secondary" (click)="loadTransactions()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3.5 9a8.1 8.1 0 0 1 14.6-3.3M20.5 15a8.1 8.1 0 0 1-14.6 3.3"/>
+              <path d="M18 2v5h-5M6 22v-5h5"/>
+            </svg>
+            Actualiser
+          </button>
         </div>
 
-        <div class="table-container" *ngIf="filtered.length > 0">
-          <table>
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Montant</th>
-                <th>Expéditeur</th>
-                <th>Destinataire</th>
-                <th>Description</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let t of filtered">
-                <td>
-                  <span [class]="'badge ' + t.type.toLowerCase()">
-                    {{ t.type }}
-                  </span>
-                </td>
-                <td>{{ t.amount | xof }}</td>
-                <td>{{ t.senderPhone }}</td>
-                <td>{{ t.receiverPhone }}</td>
-                <td>{{ t.description }}</td>
-                <td>{{ t.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="table-card" *ngIf="filtered.length > 0">
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Montant</th>
+                  <th>Expéditeur</th>
+                  <th>Destinataire</th>
+                  <th>Description</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let t of filtered">
+                  <td>
+                    <span [class]="'badge ' + badgeClass(t.type)">{{ t.type }}</span>
+                  </td>
+                  <td><strong>{{ t.amount | xof }}</strong></td>
+                  <td>{{ t.senderPhone }}</td>
+                  <td>{{ t.receiverPhone }}</td>
+                  <td>{{ t.description }}</td>
+                  <td>{{ t.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="empty" *ngIf="filtered.length === 0 && !loading">
-          Aucune transaction trouvée.
+        <div class="table-card empty-state" *ngIf="filtered.length === 0 && !loading">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>
+          </svg>
+          <span class="empty-state-title">Aucune transaction trouvée</span>
+          <span>Les transactions apparaîtront ici une fois effectuées.</span>
         </div>
       </div>
     </div>
   `,
   styles: [`
-    .transactions { max-width: 1000px; margin: 0 auto; }
-    .alert { background: #fff3e0; padding: 12px; border-radius: 4px; color: #e65100; }
-    .filters { display: flex; gap: 12px; margin: 16px 0; align-items: center; }
-    select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
-    button { padding: 8px 16px; background: #1a237e; color: white; border: none; border-radius: 4px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #1a237e; color: white; padding: 10px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; }
-    .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.8rem; }
-    .badge.deposit { background: #e8f5e9; color: #2e7d32; }
-    .badge.withdraw { background: #ffebee; color: #c62828; }
-    .badge.transfer { background: #e3f2fd; color: #1565c0; }
-    .badge.payment { background: #fff3e0; color: #e65100; }
-    .empty { text-align: center; padding: 40px; color: #9e9e9e; }
+    .toolbar .select { width: auto; min-width: 180px; }
   `]
 })
 export class TransactionsComponent implements OnInit {
@@ -121,6 +119,16 @@ export class TransactionsComponent implements OnInit {
       this.filtered = this.transactions;
     } else {
       this.filtered = this.transactions.filter(t => t.type === this.selectedType);
+    }
+  }
+
+  badgeClass(type: string): string {
+    switch (type) {
+      case 'DEPOSIT': return 'badge-success';
+      case 'WITHDRAW': return 'badge-danger';
+      case 'TRANSFER': return 'badge-info';
+      case 'PAYMENT': return 'badge-warning';
+      default: return 'badge-neutral';
     }
   }
 }

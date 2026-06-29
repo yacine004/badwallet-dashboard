@@ -1,59 +1,63 @@
-# BadwalletDashboard
+# BadWallet Dashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.17.
+Dashboard Angular pour BadWallet, un service de wallet mobile (XOF). Deux espaces :
 
-## Development server
+- **Client** — connexion par numéro de téléphone, consultation du solde, historique des transactions, transfert d'argent, paiement de factures.
+- **Agent** — liste paginée des portefeuilles, création de portefeuille, recherche d'un wallet avec opérations de dépôt/retrait.
 
-To start a local development server, run:
+## Stack
 
-```bash
-ng serve
-```
+- Angular 21 (standalone components, signals, SSR)
+- RxJS / HttpClient (`withFetch`)
+- Pas de framework CSS : design system maison (`src/styles.css`) + styles par composant
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Démarrage
 
 ```bash
-ng generate component component-name
+npm install
+npm start          # ng serve --proxy-config proxy.conf.json (proxie /api vers http://localhost:8080)
 ```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
 
 ```bash
-ng generate --help
+npm run build       # build de production (dist/badwallet-dashboard)
+npm test            # tests unitaires (Vitest)
 ```
 
-## Building
+L'API backend est attendue sur `http://localhost:8080` (voir `proxy.conf.json`).
 
-To build the project run:
+## Structure
 
-```bash
-ng build
+```
+src/app/
+  core/
+    guards/auth.guard.ts        Protège les routes nécessitant un wallet connecté
+    interceptors/error.interceptor.ts   Toast automatique sur toute erreur HTTP
+    services/                   WalletApiService, BillingApiService, ToastService
+    store/balance.store.ts      Etat partagé (signals) : phone, solde, transactions, factures, wallets
+  shared/pipes/xof.pipe.ts      Formatage des montants en XOF
+  features/
+    client/dashboard            Connexion + vue d'ensemble du solde
+    client/transactions         Historique filtrable
+    client/transfer             Transfert entre wallets
+    client/bills                Shell avec sous-routes /bills/current et /bills/history
+    agent/wallet-list           Liste paginée des portefeuilles
+    agent/wallet-create         Création de portefeuille
+    agent/wallet-search         Recherche + dépôt/retrait
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Routes
 
-## Running unit tests
+| Route | Accès | Description |
+|---|---|---|
+| `/dashboard` | public | Connexion par téléphone + solde |
+| `/transactions` | connecté | Historique des transactions |
+| `/transfer` | connecté | Transfert d'argent |
+| `/bills/current` | connecté | Factures en cours + paiement groupé |
+| `/bills/history` | connecté | Factures déjà payées (lecture seule) |
+| `/admin/wallets` | public | Liste des portefeuilles (vue agent) |
+| `/admin/create` | public | Création de portefeuille |
+| `/admin/search` | public | Recherche & opérations agent |
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Les routes "connecté" sont protégées par `authGuard`, qui redirige vers `/dashboard` si aucun numéro n'est enregistré dans la session.
 
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Voir [RAPPORT_TECHNIQUE.md](RAPPORT_TECHNIQUE.md) pour le détail des choix d'architecture (guards, interceptors, notifications, design system).
