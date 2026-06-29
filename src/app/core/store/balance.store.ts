@@ -1,4 +1,4 @@
-import { Injectable, signal, PLATFORM_ID, Inject, effect } from '@angular/core';
+import { Injectable, signal, PLATFORM_ID, Inject, effect, untracked } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { WalletApiService } from '../services/wallet-api.service';
 import { BillingApiService } from '../services/billing-api.service';
@@ -31,12 +31,14 @@ export class BalanceStore {
     // reload wallets whenever phone changes
     effect(() => {
       const p = this.phone();
-      if (p) {
-        this.loadWallets(this.walletsMeta().page, this.walletsMeta().size);
-      } else {
-        this.wallets.set([]);
-        this.walletsMeta.set({ totalElements: 0, totalPages: 1, page: 0, size: this.walletsMeta().size });
-      }
+      untracked(() => {
+        if (p) {
+          this.loadWallets(this.walletsMeta().page, this.walletsMeta().size);
+        } else {
+          this.wallets.set([]);
+          this.walletsMeta.set({ totalElements: 0, totalPages: 1, page: 0, size: this.walletsMeta().size });
+        }
+      });
     });
   }
 
@@ -83,11 +85,6 @@ export class BalanceStore {
   }
 
   loadWallets(page = 0, size = 10) {
-    if (!this.phone()) {
-      this.wallets.set([]);
-      this.walletsMeta.set({ totalElements: 0, totalPages: 1, page, size });
-      return;
-    }
     this.api.getWallets(page, size).subscribe({
       next: (d) => {
         this.wallets.set(d.content ?? []);

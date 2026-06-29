@@ -1,6 +1,5 @@
 import { Component, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WalletApiService } from '../../../core/services/wallet-api.service';
 import { BalanceStore } from '../../../core/store/balance.store';
 import { XofPipe } from '../../../shared/pipes/xof.pipe';
 
@@ -70,32 +69,7 @@ export class WalletListComponent implements OnInit {
   size = 10;
   loading = false;
 
-  constructor(private walletApi: WalletApiService, public balanceStore: BalanceStore) {
-    // reload wallets whenever a user phone is set (user logged in)
-    // also keeps existing ngOnInit behavior for first render
-    effect(() => {
-      if (this.balanceStore.phone()) {
-        // reset to first page on user change
-        this.page = 0;
-        this.loading = true;
-        this.balanceStore.loadWallets(this.page, this.size);
-      } else {
-        // when no user, still load public wallets
-        this.loading = true;
-        this.balanceStore.loadWallets(this.page, this.size);
-      }
-    });
-  }
-
-  ngOnInit() {
-    // initialize from store if available
-    this.wallets = this.balanceStore.wallets();
-    const meta = this.balanceStore.walletsMeta();
-    this.totalElements = meta.totalElements;
-    this.totalPages = meta.totalPages;
-    // ensure a load for first render
-    this.balanceStore.loadWallets(this.page, this.size);
-    // react to store updates and clear loading when new data arrives
+  constructor(public balanceStore: BalanceStore) {
     effect(() => {
       this.wallets = this.balanceStore.wallets();
       const m = this.balanceStore.walletsMeta();
@@ -105,12 +79,13 @@ export class WalletListComponent implements OnInit {
     });
   }
 
+  ngOnInit() {
+    this.loadWallets();
+  }
+
   loadWallets() {
-    // keep method for manual refresh but delegate to store
     this.loading = true;
     this.balanceStore.loadWallets(this.page, this.size);
-    // loading flag cleared by subscription side-effects; approximate delay
-    setTimeout(() => this.loading = false, 800);
   }
 
   nextPage() {
