@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -9,18 +10,34 @@ export const routes: Routes = [
   },
   {
     path: 'transactions',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/client/transactions/transactions')
       .then(m => m.TransactionsComponent)
   },
   {
     path: 'transfer',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/client/transfer/transfer')
       .then(m => m.TransferComponent)
   },
   {
     path: 'bills',
+    canActivate: [authGuard],
     loadComponent: () => import('./features/client/bills/bills')
-      .then(m => m.BillsComponent)
+      .then(m => m.BillsComponent),
+    children: [
+      { path: '', redirectTo: 'current', pathMatch: 'full' },
+      {
+        path: 'current',
+        loadComponent: () => import('./features/client/bills/bills-current/bills-current')
+          .then(m => m.BillsCurrentComponent)
+      },
+      {
+        path: 'history',
+        loadComponent: () => import('./features/client/bills/bills-history/bills-history')
+          .then(m => m.BillsHistoryComponent)
+      }
+    ]
   },
   {
     path: 'admin/wallets',
